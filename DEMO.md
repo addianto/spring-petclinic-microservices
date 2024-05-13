@@ -91,16 +91,6 @@ In the example above, the `GET` and `POST` request handler invocations will be m
 The collected measurements will be available in `petclinic.pet` metrics namespace, which in turn, collected by Prometheus.
 Then, we can query the metrics corresponding to the number of created pet by using the following PromQL query: `petclinic_pet_seconds_count{method="processCreationForm", exception="none"}`.
 
-## Simulate Distributed Tracing
-
-Let's simulate a transaction where the pet clinic staff adds a new pet owner and their pet:
-
-1. Create a new pet owner.
-2. Open the pet owner's detail view, then click **Add New Pet**.
-3. Look at the newly created pet in pet owner's detail view, then click **Add Visit**.
-   Fill in some information in the page, then click **Add New Visit**.
-4. The view should go back to Pet Owner's detail view.
-
 ## Possible Issues
 
 - If you cannot start containers due to conflicting ports,
