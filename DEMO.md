@@ -1,10 +1,15 @@
 # Live Demo
 
+Before the live demo, please prepare the following tools:
+
+- Docker
+- Docker Compose
+
 To begin, run all containers:
 
 ```shell
 docker compose up --detach
-# In some Docker Compose installation, the command is: docker-compose up --detach
+# In some Docker & Docker Compose installation, the command is: docker-compose up --detach
 ```
 
 ## Prometheus & Grafana
@@ -37,6 +42,54 @@ From there, you can install the Custom Thread Groups plugin.
 Run the test plan by loading it to the JMeter GUI or via `jmeter` command.
 Let the test plan run for a while. It will take five minutes to finish.
 While waiting, you can see the Grafana dashboard is being updated.
+
+## Spring Boot Actuator & Custom Metrics
+
+The example above shows that we can capture metrics related to HTTP traffic. It is also, coincidentally, some of the default metrics that are exported when we enable Spring Boot Actuator component in a Spring Boot-based project.
+
+While the default metrics are useful, we may also want to collect business-related metrics from the application.
+For example, how many pets have been registered by pet owners?
+
+Let's look at `PetResource.java` in `spring-petclinic-customers-service` directory:
+
+```java
+// Omitted for brevity ...
+@RestController
+@Timed("petclinic.pet")
+@RequiredArgsConstructor
+@Slf4j
+class PetResource {
+
+    private final PetRepository petRepository;
+    private final OwnerRepository ownerRepository;
+
+
+    @GetMapping("/petTypes")
+    public List<PetType> getPetTypes() {
+        return petRepository.findPetTypes();
+    }
+
+    @PostMapping("/owners/{ownerId}/pets")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Pet processCreationForm(
+        @RequestBody PetRequest petRequest,
+        @PathVariable("ownerId") @Min(1) int ownerId) {
+
+        Owner owner = ownerRepository.findById(ownerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Owner " + ownerId + " not found"));
+
+        final Pet pet = new Pet();
+        owner.addPet(pet);
+        return save(pet, petRequest);
+    }
+    // Omitted for brevity ...
+}
+```
+
+`@Timed` annotation adds instrumentation on each methods in the applied class.
+In the example above, the `GET` and `POST` request handler invocations will be measured.
+The collected measurements will be available in `petclinic.pet` metrics namespace, which in turn, collected by Prometheus.
+Then, we can query the metrics corresponding to the number of created pet by using the following PromQL query: `petclinic_pet_seconds_count{method="processCreationForm", exception="none"}`.
 
 ## Simulate Distributed Tracing
 
