@@ -12,7 +12,7 @@ docker compose up --detach
 1. Open the Grafana dashboard at [`http://localhost:3000/dashboard`](http:/localhost:3000/dashboards).
 2. Choose **Spring Petclinic Metrics** dashboard to open it.
 3. You will see 7 widgets in the dashboard.
-   Each widget displays visualisation based on a query written in PromQL to the Prometheus data source that is running within the private Docker network (i.e., `prometheus-server` running on port `9090` in the internal network).
+   Each widget displays visualisation based on a query written in PromQL to the Prometheus data source that is running within the private Docker network (i.e., `prometheus-server` running on port `9090` in the internal network created by `docker compose`).
 4. Let's try looking at one widget and the corresponding PromQL query example.
    Click on the **HTTP Request Activity** widget title and choose **Edit** button.
 5. You will see a bigger widget view, including the query builder panel at the bottom of the view.
@@ -23,7 +23,7 @@ docker compose up --detach
     - `sum()` --> a function in PromQL that adds up all the values produced by the wrapped function.
 7. The latter query, i.e., `sum(rate(http_server_requests_seconds_count{status=~"5.."}[1m]))`, is similar. However, it adds a condition for filtering metrics based on label values. See the `{status=~"5.."}` part in the query? It means the query only take metrics where the `status` label has matching any HTTP status codes that start with `5` (e.g., `500`, `502`, etc.).
 
-## Simulate a Load Test
+## Simulate Load Test
 
 Now, go back to the main dashboard view and keep the browser window open.
 Let's try to simulate a load test and see how the Grafana visualises the activities.
@@ -38,8 +38,20 @@ Run the test plan by loading it to the JMeter GUI or via `jmeter` command.
 Let the test plan run for a while. It will take five minutes to finish.
 While waiting, you can see the Grafana dashboard is being updated.
 
+## Simulate Distributed Tracing
+
+Let's simulate a transaction where the pet clinic staff adds a new pet owner and their pet:
+
+1. Create a new pet owner.
+2. Open the pet owner's detail view, then click **Add New Pet**.
+3. Look at the newly created pet in pet owner's detail view, then click **Add Visit**.
+   Fill in some information in the page, then click **Add New Visit**.
+4. The view should go back to Pet Owner's detail view.
+
 ## Possible Issues
 
-- Cannot start containers due to conflicting ports.
-  Make sure all the published ports are not used by other running processes.
+- If you cannot start containers due to conflicting ports,
+  make sure all the published ports are not used by other running processes on the host machine.
   You can change the published ports by modifying the `ports` section of a service in [`docker-compose.yml`](./docker-compose.yml) file.
+- The services sometime unable to connect to Zipkin, thus dropping all spans.
+  The cause is still unknown. The distributed tracing worked when tested on a laptop, but got broken when tested on a desktop PC.
